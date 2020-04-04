@@ -5,7 +5,7 @@ locally, `cd` to the root, and run
 pip install -e .
 ```
 
-# Introduction, caveats
+# Introduction
 
  In this README, I discuss my solution to the
  [problem statement](docs/problem_statement.pdf).
@@ -44,13 +44,13 @@ launch a cloud cluster and parallelize the execution of such methods.
          
 Because most of the below explores possible approaches, and the repo itself
 is intended to just capture the code behind the analysis, the repo
-does not follow the usual standards of a Python library. There is
-necessarily some dead code; certainly, it's not software.  Nevertheless, with
-more time I would still organize the code into a coherent whole that is
-focused on automating some experimentation to facilitate performance 
-fine-tuning. Specifically, I would have a config file that populates the hardcoded
-hyperparameters with different combinations, applies different algorithms
- specified in the config, and  returns the optimal result (based on a
+does not follow the usual standards of a Python library. As it stands, it is
+not software. Nevertheless, with more time I would still organize the code
+into a coherent whole that is focused on automating some experimentation to
+facilitate performance fine-tuning. Specifically, I would have a config file
+that populates the hardcoded hyperparameters with different combinations,
+ applies different algorithms
+ specified in the config, and returns the optimal result (based on a
 performance metric).
 
 Finally, note that the choice of one modeling step over another depends on
@@ -68,11 +68,10 @@ approaches I tried in the initial analysis.
  can be found
   [here](so_text/main.py).
  The main steps of the Pipeline are:
- - Read the data into a data frame
- - Encode stemmed word features, and perform tf-idf
- - Feed the tf-idf matrix, and also an additional feature (length of doc
- ), into XGBoost
- - Generate a performance report
+ - Read the data into a data frame.
+ - Encode stemmed word features, and perform tf-idf.
+ - Feed the tf-idf matrix, and also an additional feature (length of doc), into XGBoost
+ - Generate a performance report, with `roc_auc` and a classification report
 
  
 # Main analysis
@@ -267,8 +266,9 @@ direction further. Of course, here I am trying Naive Bayes, whereas in the
      because it was fast to train, and the natural first choice, considering the
      analogies one can make between this problem and detecting spam.
      The result was already presented in the "Title and Body" section above
-      or in the function [`run_title_and_body_example_concat`](so_text
-/readme_analysis_runs.py). (Note that is the barest code, incorporating no
+      or in the function
+[`run_title_and_body_example_concat`](so_text/readme_analysis_runs.py).
+ (Note that is the barest code, incorporating no
  additional preprocessing or features.)
      The downside of the Naive Bayes approach is
      that it assumes independence across different words which is an
@@ -362,11 +362,23 @@ How well does it handle really long posts or titles?*
  [Do ad hoc analysis on how well it did with really long posts though]
 
 *If you got to work on this again, what would you do differently (if anything)?*
- Throughout the document I have listed what I would do with more time. I would
- work on those things.
+ Throughout the document I have listed what I would do with more time
+ . Generally speaking, the approach of focusing on the analysis first made
+  the code more disorganized -- there's no overarching design because it's
+  not software. I'm not sure there was a better way, though.
 
 *If you found any issues with the dataset, what are they?*
- There were two missing values because of misapplied parser. This suggests that
- there could be other issues at the parsing stage. However, applying my own
- parser did not lead to a significant difference in performance, as discussed
+ There were two missing values because of misapplied parser:
+  ```
+
+Title	                                            label	Title_processed
+<script async> not working in rails	                0	NaN
+<rich:popupPanel buttons not working in JSF Pr...	0       NaN
+
+```
+  
+ Since there were only two, it was not an issue to simply drop those values.
+ This suggests that there could be other issues at the parsing stage. However,
+ applying my own parser did not lead to a significant difference in
+ performance, as discussed
  above.
