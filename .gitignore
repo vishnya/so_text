@@ -130,3 +130,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+/docs/okc.ipynb
+/docs/okc2.ipynb
