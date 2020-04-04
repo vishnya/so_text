@@ -235,39 +235,42 @@ Paste result
 See the [code here](so_text/readme_analysis_runs.py).
 The results were similar enough that I didn't feel compelled to pursue this
 direction further. Of course, here I am trying Naive Bayes, whereas in the
-"main pipeline" I stuck with xgboost, so that would be an additional
-approach to compare.
+"main pipeline" I stuck with XGBoost, so I could still try it with that
+ algorithm.
    
 ### Feature selection for the model
- Since the analysis is not concerned with effective methods, I have left the
- question aside of feature selection for now. With more time I'd follow this
- post: https://ramhiser.com/post/2018-03-25-feature-selection-with-scikit
-  -learn-pipeline/
+ Since the analysis is not concerned with effectiveness, I have left the
+ question aside of feature selection for now. With more time I'd follow [this
+ blog post](https://ramhiser.com/post/2018-03-25-feature-selection-with
+-scikit-learn-pipeline/) to integrate feature selection with the sklearn
+ Pipeline. 
 
 ## On Algorithms
- I tried two algorithms, with similar performance of `roc_auc`:
+ I tried two algorithms, both of which had similar performance of `roc_auc`:
  - Naive Bayes: 
      I tried the algorithm on the tf-idf alone. I chose Naive Bayes
      because it was fast and easy, the natural first choice, considering the
      analogies one can make between this problem and detecting spam.
-     . The
-      downside of the approach is
-     that it assumes independence across different n-grams which is an
-     oversimplification. Another issue is that order is not preserved, whereas
+     The result was already presented in the "Title and Body" section above
+      or in the function [`run_title_and_body_example_concat`](so_text
+/readme_analysis_runs.py). (Note that is the barest code, incorporating no
+ additional preprocessing or features.)
+     The downside of the Naive Bayes approach is
+     that it assumes independence across different words which is an
+     oversimplification. (As an aside, I  also tried with n
+     -grams, but the improvement across metrics was not significant.) Another
+      issue with Naive Bayes is that order of words is not preserved, whereas
      the order of the words could provide some signal in terms of whether the
-     document is accepted or not; for example, documents that are accepted could
+     document is accepted or not. For example, documents that are accepted could
      have more introductory words up front. Given more time for this reason I
      would try training an LSTM, which does consider word order.
 - XGBoost: 
     I tried XGBoost on the tf-idf encoded features, and an additional
     numerical one of length of the document. The advantage of XGBoost is
     that it is relatively fast to train and allows for features of mixed types.
-https://towardsdatascience.com/word-bags-vs-word-sequences-for-text-classification-e0222c21d2ec
-
 
 ## On Evaluating performance
-Overall, I chose to do both a classification report and an roc_auc. (Snippet
- from final pipeline)
+Overall, I generate a report that has `roc_auc`, `accuracy`, 
 The advantage of the classification report is that it breaks down how well the
 model is performing in different buckets for a particular threshold. However,
 this is misleading, because the classification report is just for one threshold.
