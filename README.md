@@ -7,13 +7,14 @@ pip install -e .
 
 # Introduction, caveats
 
-In this document, I discuss my solution to the [problem statement](docs
-/problem_statement.pdf). I am given a data set of the text of questions on
- StackOverflow, with labels that indicate whether the question was accepted or
- closed. The set-up is that currently the acceptance/rejection is done
- manually, but perhaps there is a way to offload some manual work through
+ In this README, I discuss my solution to the
+ [problem statement](docs/problem_statement.pdf)
+ As data, we have the text of questions on StackOverflow, with labels that
+ indicate whether the question was accepted or closed. The set-up is that
+ currently the acceptance/rejection is done
+ manually, but we can offload some manual work through
  automation and predictive modeling. Here is a row of the data that was
-  provided:
+ provided:
  
 ```
                                 Title:  \
@@ -32,24 +33,24 @@ ruby : most common number for users
  
 
 The problem statement emphasizes exploration and analysis over performance
-fine-tuning and deployment.  I experimented
+fine-tuning and deployment. Thus I experimented
 with approaches throughout the initial modeling process, employing various
 preprocessing, feature engineering, and algorithm techniques, which
-needed to be then partially represented in code in the repo. Some
+needed to be then represented in code in the repo. Some
 approaches took too long to execute on my MacBook Air, such as the
 breakdown of a document into its parts of speech to assess sentence
 sophistication/complexity. Given more time to experiment, I would
 launch a cloud cluster and parallelize the execution of such methods.
          
 Because most of the below explores possible approaches, and the repo itself
-is intended to just capture the code behind the experimentation, the repo
+is intended to just capture the code behind the analysis, the repo
 does not follow the usual standards of a Python library. There is
-necessarily some dead code; it's not software.  Nevertheless, with more time I
-would still organize the code into a coherent whole that is focused on
-automating some experimentation to facilitate performance fine-tuning.
-Specifically, I would have a config file that populates the hardcoded
-hyperparameters with different combinations, applies different
-algorithms specified in the config, and  returns the optimal result (based on a
+necessarily some dead code; certainly, it's not software.  Nevertheless, with
+more time I would still organize the code into a coherent whole that is
+focused on automating some experimentation to facilitate performance fine
+-tuning. Specifically, I would have a config file that populates the hardcoded
+hyperparameters with different combinations, applies different algorithms
+ specified in the config, and  returns the optimal result (based on a
 performance metric).
 
 Finally, note that the choice of one modeling step over another depends on
@@ -58,14 +59,15 @@ general theme of the analysis is that different modeling steps lead to
 different values of different performances metrics, and the choice of
 performance metric around which to optimize depends on how one is intending
 to take action based on the results of the model. Overall, I did not find
-significant differences in performance metrics among the different
-approaches I tried.
+significant differences in performance metrics among different
+approaches I tried in the initial analysis.
 
 # Full pipeline code
-Although the problem is exploratory, the statement also indicates that I
- should choose a final method. The code modeling pipeline can be found [here
- ](so_text/main.py).
- The main steps of the SkLearn Pipeline are:
+ Although the problem is exploratory, the statement also indicates that I
+ should choose a final method. As such, code in the form of an SkLearn Pipeline
+ can be found
+  [here](so_text/main.py).
+ The main steps of the Pipeline are:
  - Read the data into a data frame
  - Encode stemmed word features, and perform tf-idf
  - Feed the tf-idf matrix, and also an additional feature (length of doc
@@ -123,7 +125,19 @@ Recall from the problem statement that standards for posts specify they
  would give a score close to `0` if the text was similar in words
  and word frequency to a document labeled `0` (i.e., accepted).
  Word similarity measure is achieved with tf-idf vectorization in the
-  Pipeline.  
+  Pipeline:
+  
+```
+    classifier = Pipeline([
+        ('features', FeatureUnion([
+...
+                ('tfidf',
+                 TfidfVectorizer(tokenizer=tokenizer,
+                                 min_df=TFIDF_MIN_DF,
+                                 max_df=TFIDF_MAX_DF,
+                                 ngram_range=TF_IDF_NGRAM_RANGE)),
+
+```
 
  However, there is some nuance here. If two documents have very close tf-idf
  encodings, they can potentially be duplicates of each other, and we would
@@ -193,7 +207,7 @@ The code took too long to run, and to test this in the future I'd parallelize
 
  There are at least two ways of dealing with the duplication issue:
  - Create a decision layer on top of the predictive process.
- . In particular, there is a database of text documents that StackOverflow
+  In particular, there is a database of text documents that StackOverflow
   has, presumably from which the training was sampled in the first place. As
   a new document comes in, we can measure the cosine similarity of its
   encoded vector to the other encoded documents in the database. We can set
@@ -203,9 +217,11 @@ The code took too long to run, and to test this in the future I'd parallelize
 https://towardsdatascience.com/de-duplicate-the-duplicate-records-from-scratch-f6e5ad9e79da
  - Add a column based on similarity.  Cluster texts based on
  similarity, using, say, k-means clustering, selecting the threshold by hand
- so that it seems that all the documents in each cluster are duplicates of
+ so that it appears that all the documents in each cluster are duplicates of
  each other. Now, for each cluster of texts, choose one text at random at put
-  a `1`.
+ a `1`. The obvious disadvantage of this approach is that we cannot typically
+ manually inspect each cluster to see that it only contains duplicates, so
+ this is equally ad hoc as the decision layer before.
  
  
 ### Title and body
@@ -270,10 +286,14 @@ direction further. Of course, here I am trying Naive Bayes, whereas in the
     that it is relatively fast to train and allows for features of mixed types.
 
 ## On Evaluating performance
-Overall, I generate a report that has `roc_auc`, `accuracy`, 
+Overall, I generate a report that has `roc_auc`,  and sklearn's
+classification report, which breaks down precision and recall by class (and
+also includes accuracy).
+
 The advantage of the classification report is that it breaks down how well the
 model is performing in different buckets for a particular threshold. However,
-this is misleading, because the classification report is just for one threshold.
+providing the classification report without further explanation can be
+misleading, because the classification report is just for one threshold.
 If we do not know what the threshold is going to be for our model, the
 classification report has limited significance. The threshold should be
 optimized around the outcome one wants to achieve with the model. For example,
@@ -284,16 +304,19 @@ normally done in such an ad-hoc fashion.)  Then the classification report will
 have more meaning.
 
  Roc_auc can be a good measure of the model performance because it does not take
- into account the choice of threshold, which as explained is scientifically
- arbitrary. However, because the roc_auc is a curve between the TPR and the FPR,
+ into account the choice of threshold, which as explained, cannot be
+ determined without additional information; it is essentially a way of
+ understanding how well a model is performing across all thresholds. However
+ , because the roc_auc is a curve between the true and false positive rates,
  in the case of highly imbalanced data, it does not indicate how well the model
  performs on minority classes. Precision-recall curves can be better in this
  situation
  (see http://ftp.cs.wisc.edu/machine-learning/shavlik-group/davis.icml06.pdf).
- Therefore, if the training dataset provided to me was sampled from a highly
- imbalanced dataset, I would perhaps look to the AUCPR.
+ Therefore, if the artificially balanced training dataset provided was sampled
+ from a highly imbalanced dataset, I may look instead to the AUCPR.
 
-*Questions from the problem statement:*
+## Questions from the problem statement
+Wrapping up, I return to the questions to make sure they're addressed.
 
 *What metric did you use to judge your approach’s performance, and how
 did it perform? Why did you choose that metric?*
@@ -315,24 +338,22 @@ metrics you measure?*
 *How generalizable is your method? If you were given a different (disjoint)
 random sample of posts with the same labeling scheme, would you expect it to
 perform well? Why or why not? Do you have evidence for your reasoning?*
- Since the data seems to be “not too small” for the approach chosen, it would
- potentially suffer from the same limitations previously, but if it was
- truly randomly chosen, no new limitations come to mind.
- One limitation that still stands is that with duplicates -- see the section 
- "On feature engineering/Not a duplicate”. In short, for duplicates, a
- different random sample will potentially be missing an original post
- (the original non-duplicated post which future posts duplicated), so that
- given a new post, depending on how one handles duplicates,
- it can be treated as the original, whereas it is a duplicate.
+ It would potentially suffer from the same limitations as the original
+ random sample. One limitation that still stands is that with duplicates
+ -- see the section "On feature engineering/Not a duplicate”. In short
+ , suppose a new post is a duplicate of an old one. If a different random
+ sample misses the original post, the new post may be accepted mistakenly.
 
 *How well would this method work on an entirely new close reason, e.g.
 duplicate or spam posts?*
  For duplicates, see discussion above ““feature engineering/Not a duplicate”.
  Duplicates are an aspect of this problem statement and the method is already
- limited in the way I describe.  I think this approach would work well on spam
- posts, with the “title” analogous to email subject line, and the “body”
- analogous to the body of the email. Spam could potentially be imbalanced, and
- the class imbalance could be remedied with upsampling techniques, with care.
+ limited in the way I have described.  I think the approach would work
+ well on spam posts, with the “title” analogous to email subject line, and
+ the “body”
+ analogous to the body of the email. On the other hand, spam could
+  potentially be more imbalanced, and the class imbalance could be remedied
+   with upsampling techniques, taken with care.
  
 *Are there edge cases that your method tends to do worse with? Better? E.g.,
 How well does it handle really long posts or titles?*
