@@ -8,8 +8,8 @@ pip install -e .
 # Introduction, caveats
 
  In this README, I discuss my solution to the
- [problem statement](docs/problem_statement.pdf)
- As data, we have the text of questions on StackOverflow, with labels that
+ [problem statement](docs/problem_statement.pdf).
+ The data comprises the text of questions on StackOverflow, with labels that
  indicate whether the question was accepted or closed. The set-up is that
  currently the acceptance/rejection is done
  manually, but we can offload some manual work through
@@ -47,8 +47,8 @@ is intended to just capture the code behind the analysis, the repo
 does not follow the usual standards of a Python library. There is
 necessarily some dead code; certainly, it's not software.  Nevertheless, with
 more time I would still organize the code into a coherent whole that is
-focused on automating some experimentation to facilitate performance fine
--tuning. Specifically, I would have a config file that populates the hardcoded
+focused on automating some experimentation to facilitate performance 
+fine-tuning. Specifically, I would have a config file that populates the hardcoded
 hyperparameters with different combinations, applies different algorithms
  specified in the config, and  returns the optimal result (based on a
 performance metric).
@@ -117,7 +117,7 @@ Example of how a particular sentence was misclassified with one or another.
 
 ## On feature engineering
 Recall from the problem statement that standards for posts specify they
- should be: “*on topic*, *detailed*, and *not a duplicate* of another question.”
+ should be: “*on topic*, *detailed*, and *not a duplicate of another question*.”
  
 ### “On topic”:
  One way of feature engineering the concept of "on topic" is to represent word
@@ -175,9 +175,9 @@ Ratios of parts of speech could also be an indication of how
 are accepted tend to have some sort of distribution among different parts of
 speech -- fewer adjectives proportionally, etc. Such a feature
 could also provide signal for the post being "on topic".
-(Implemented via [`pos_ratio`](so_text/feature_process_utils.py))
-The code took too long to run, and to test this in the future I'd parallelize
- this in a cluster.
+(Implemented via [`pos_ratio`](so_text/feature_process_utils.py).)
+As mentioned in the introduction, the code took too long to run, and to test
+this in the future I'd parallelize this in a cluster.
  
 ### “Not a duplicate”:
  Suppose we were given the full corpus, and the model was trained on the full
@@ -185,7 +185,7 @@ The code took too long to run, and to test this in the future I'd parallelize
  imbalance, we can attempt to remedy it with upsampling techniques, but we
  ignore that detail for this discussion.) Then, suppose that a new document
  comes in and we want to score it using the trained model. Suppose the previous
- training set included just 1 actual ``duplicate'' of the new document
+ training set included just 1 actual "duplicate" of the new document
  , and the new document is very similar to the one in the training set. Then
  if the document in the training set was accepted (i.e., `label 0`), the model is
   more
@@ -203,7 +203,7 @@ The code took too long to run, and to test this in the future I'd parallelize
  comes in, it may well be a duplicate. However, because the training set
  is a sample, it may not contain the similar duplicates that were rejected on
  grounds of their duplication, and so the document may be more likely to be
- accepted by the mode. 
+ labelled `0` by the model. 
 
  There are at least two ways of dealing with the duplication issue:
  - Create a decision layer on top of the predictive process.
@@ -256,16 +256,15 @@ direction further. Of course, here I am trying Naive Bayes, whereas in the
    
 ### Feature selection for the model
  Since the analysis is not concerned with effectiveness, I have left the
- question aside of feature selection for now. With more time I'd follow [this
- blog post](https://ramhiser.com/post/2018-03-25-feature-selection-with
--scikit-learn-pipeline/) to integrate feature selection with the sklearn
+ question aside of feature selection for now. With more time I'd follow
+ [this blog post](https://ramhiser.com/post/2018-03-25-feature-selection-with-scikit-learn-pipeline/) to integrate feature selection with the sklearn
  Pipeline. 
 
 ## On Algorithms
  I tried two algorithms, both of which had similar performance of `roc_auc`:
  - Naive Bayes: 
      I tried the algorithm on the tf-idf alone. I chose Naive Bayes
-     because it was fast and easy, the natural first choice, considering the
+     because it was fast to train, and the natural first choice, considering the
      analogies one can make between this problem and detecting spam.
      The result was already presented in the "Title and Body" section above
       or in the function [`run_title_and_body_example_concat`](so_text
@@ -279,7 +278,7 @@ direction further. Of course, here I am trying Naive Bayes, whereas in the
      the order of the words could provide some signal in terms of whether the
      document is accepted or not. For example, documents that are accepted could
      have more introductory words up front. Given more time for this reason I
-     would try training an LSTM, which does consider word order.
+     would try training an `LSTM`, which does consider word order.
 - XGBoost: 
     I tried XGBoost on the tf-idf encoded features, and an additional
     numerical one of length of the document. The advantage of XGBoost is
@@ -298,7 +297,8 @@ If we do not know what the threshold is going to be for our model, the
 classification report has limited significance. The threshold should be
 optimized around the outcome one wants to achieve with the model. For example,
 if StackOverflow wants to use the model to automate the approval or declining of
-posts, it should calculate the cost of false positives and negatives, and
+posts, it should calculate the cost to the business of false positives and
+negatives, and thereby
 determine the threshold for the classifier accordingly. (Threshold selection is
 normally done in such an ad-hoc fashion.)  Then the classification report will
 have more meaning.
@@ -313,7 +313,7 @@ have more meaning.
  situation
  (see http://ftp.cs.wisc.edu/machine-learning/shavlik-group/davis.icml06.pdf).
  Therefore, if the artificially balanced training dataset provided was sampled
- from a highly imbalanced dataset, I may look instead to the AUCPR.
+ from a highly imbalanced dataset, I may look instead to the AUC-PR.
 
 ## Questions from the problem statement
 Wrapping up, I return to the questions to make sure they're addressed.
