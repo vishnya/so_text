@@ -5,8 +5,6 @@ locally, `cd` to the root, and run
 pip install -e .
 ```
 
-# Introduction
-
  In this README, I discuss my solution to the
  [problem statement](docs/problem_statement.pdf).
  The data comprises the text of questions on StackOverflow, with labels that
@@ -30,41 +28,58 @@ hi i'm new to ruby on rails . i created users ...
 ruby : most common number for users  
 
 ```
- 
+ My approach was to build a predictive model that is a classifier
+ once a threshold is applied. The limitations of my approach for this problem
+ context are
+ addressed in the analysis below. For one, without the cost of false
+ positives and negatives, and an understanding of which call to make in the
+ trade-off between better classifying one category over another, it is not
+ clear how to set the threshold. In classifying I provisionally went with a
+ threshold of `.5`, more for a concrete *illustration* of how the classifier
+ classifies points at *some* threshold. For the performance metric, I chose
+ `roc_auc` because it shows performance across all thresholds on the test
+ set. However, because the test set is held out from an artificially
+ balanced set, it is itself artificially balanced, which means that if we
+ optimize around performance metrics, we are not optimizing
+ around how the model would perform in the wild, but rather the conditions of
+ the test set. For example, it is unclear to me that the
+ imbalanced nature of the test set means that the rank ordering of models is
+ preserved. That is, just because one ML approach has a better or worse
+ outcome in terms of performance metrics on the test set, it is unclear to me
+ that it
+ should be chosen over a different one. See the sections "On
+ Evaluating Performance" and the answer to Question 2 below for a more
+ detailed discussion.
 
-The problem statement emphasizes exploration and analysis over performance
-fine-tuning and deployment. Thus I experimented
-with approaches throughout the initial modeling process, employing various
-preprocessing, feature engineering, and algorithm techniques, which
-needed to be then represented in code in the repo. Some
-approaches took too long to execute on my MacBook Air, such as the
-breakdown of a document into its parts of speech to assess sentence
-sophistication/complexity. Given more time to experiment, I would
-launch a cloud cluster and parallelize the execution of such methods.
-         
-Because most of the below explores possible approaches, and the repo itself
-is intended to just capture the code behind the analysis, the repo
-does not follow the usual standards of a Python library. As it stands, it is
-not software. Nevertheless, with more time I would still organize the code
-into a coherent whole that is focused on automating some experimentation to
-facilitate performance fine-tuning. Specifically, I would have a config file
-that populates the hardcoded hyper-parameters with different combinations,
- applies different algorithms
- specified in the config, and returns the optimal result (based on a
-performance metric).
+ The problem statement emphasizes exploration and analysis over performance
+ fine-tuning and deployment. Thus, given the caveats above, I experimented
+ with approaches throughout the initial modeling process, employing various
+ preprocessing, feature engineering, and algorithm techniques, which
+ needed to be then represented in code in the repo. Because most of the below
+ explores possible approaches, and the repo itself
+ is intended to merely capture some of the code behind the analysis, the repo
+ does not follow the usual standards of a Python library. Nevertheless, with
+ more time I could  organize the code
+ into a coherent whole that is focused on automating some experimentation to
+ facilitate performance fine-tuning. Specifically, I would have a config file
+ that populates the hardcoded hyper-parameters with different combinations,
+ applies different algorithms specified in the config, and returns the optimal
+ result (based on a
+ performance metric).
 
-Finally, note that the choice of one modeling step over another depends on
-the outcome one wants, on the context in which the model is deployed. A
-general theme of the analysis is that different modeling steps lead to
-different values of different performances metrics, and the choice of
-performance metric around which to optimize depends on how one is intending
-to take action based on the results of the model. Overall, I did not find
-significant differences in performance metrics among different
-approaches I tried in the initial analysis.
+ Finally, note that the choice of one modeling step over another depends on
+ the outcome one wants, on the context in which the model is deployed. A
+ general theme of the analysis is that different modeling steps lead to
+ different values of different performances metrics, and the choice of
+ performance metric around which to optimize depends on how one is intending
+ to take action based on the results of the model. Overall, I did not find
+ significant differences among the values performance metrics among different
+ approaches I tried in the initial analysis.
 
 # Full pipeline code
- Although the problem is exploratory, the statement also indicates that I
- should choose a final method. As such, code in the form of an `SkLearn Pipeline`
+ Although the problem solution is exploratory, the statement implies that I
+ have some final method in mind. As such, code in the form of an `SkLearn
+  Pipeline`
  can be found
   [here](so_text/main.py).
  The main steps of the `Pipeline` are:
@@ -72,49 +87,100 @@ approaches I tried in the initial analysis.
  - Encode stemmed word features, and perform `tf-idf`.
  - Feed the `tf-idf` matrix, and also an additional feature (length of doc), 
  into `XGBoost`.
- - Generate a performance report, with `roc_auc`,  classification report and
+ - Generate a performance report, comprising the `roc_auc`, a classification
+  report and a
   confusion matrix.
 
  
 # Main analysis
-
+ In the below, I compare various techniques. The code for the analysis is
+ mostly found in
+ [readme_analysis_runs.py](so_text/readme_analysis_runs.py),
+ This analysis captures the sandbox nature of data-science, where once tries
+ different approaches in the effort to find evidence to pursue an
+ approach further.
+ 
 ## On text processing
-When we apply various text parsing and processing techniques to training text
-data, we change the data. Thus the overall model estimator trained on that is
-different as well. There is a trade-off between scraping the text too much
-, so that important signal is lost, and scraping the text too little, so that
-there is de-normalization, i.e. two words that should be treated as the same
-are not. For example, in the course of text processing, one might remove a
-word that would have been signal that separated the `0` and `1` class
-. In particular, the provided parsed text removes some `html`, but some of
-StackOverflow’s articles involve `html` code intentionally, so that means some of
-that signal is lost. Conversely, if one does not pre-process the text at all
-, one
-would treat the words `Cluster` and `cluster` differently, even though
-from the point of view of word frequency they should not be. 
+ When we apply various text parsing and processing techniques to training text
+ data, we change the data. Thus the overall model estimator trained on that is
+ different as well. There is a trade-off between scraping the text too much,
+ so that signal is lost, and scraping the text too little, so that
+ there is de-normalization, i.e. two words that should be treated as the same
+ are not. For example, in the course of text processing, one might remove a
+ word that would have been signal that separated the `0` and `1` class.
+ In particular, the provided parsed text removes some `html`, but some of
+ StackOverflow’s articles involve `html` code intentionally, so that means
+ some of that signal is lost. Conversely, if one does not pre-process the
+ text at all, one would treat the words `Cluster` and `cluster` differently,
+ even though from the point of view of word frequency they should not be. 
   
- For illustration, we can compare the performance of the final pipeline on the
- unprocessed vs the processed code:
+ For illustration, we can compare the performance of a `MNNaiveBayes
+ ` classifier trained on unprocessed vs  processed data (see
+ [`run_no_preprocess_example`](so_text/readme_analysis_runs.py)):
    
 ```
-Performance for unprocessed text
-Performance for processed text
+>>> run.run_no_preprocess_example()
+roc_auc score: 0.8400422115864314
+              precision    recall  f1-score   support
+
+           0       0.74      0.78      0.76     12497
+           1       0.77      0.73      0.75     12503
+
+    accuracy                           0.75     25000
+   macro avg       0.75      0.75      0.75     25000
+weighted avg       0.75      0.75      0.75     25000
+
+         0  1  <-  Predicted
+       0 [9764 2733]
+True   1 [3435 9068]
+```
+It appears the processed text
+had very slightly worse results in this setup (see
+ [`run_title_and_body_example_concat`](so_text/readme_analysis_runs.py
+ )); this likely is the a result of an essentially even trade-off between text
+  normalization and signal, as mentioned above:
+```
+>>> run.run_title_and_body_example_concat()
+roc_auc score: 0.8397354019687591
+              precision    recall  f1-score   support
+
+           0       0.74      0.77      0.76     12497
+           1       0.76      0.73      0.75     12503
+
+    accuracy                           0.75     25000
+   macro avg       0.75      0.75      0.75     25000
+weighted avg       0.75      0.75      0.75     25000
+
+         0  1  <-  Predicted
+       0 [9650 2847]
+True   1 [3338 9165]
 ```
 
-We can see that the processed text performs differently in way x. 
-Let us compare the top `tf-idf` features:
+Now let's try another text processor
+[`process_text`](so_text/feature_process_utils.py). The performance dips
+ slightly more.
 
 ```
-insert top tf-idf features for both 
-```
+>>> run.run_alternate_parser_example()
+roc_auc score: 0.8378418466596904
+              precision    recall  f1-score   support
 
-Now let's try another parser. Link here.
+           0       0.74      0.77      0.76     12497
+           1       0.76      0.73      0.75     12503
+
+    accuracy                           0.75     25000
+   macro avg       0.75      0.75      0.75     25000
+weighted avg       0.75      0.75      0.75     25000
+
+         0  1  <-  Predicted
+       0 [9621 2876]
+True   1 [3365 9138]
 
 ```
-Performance with processed text according to parser.
-```
-
-Example of how a particular sentence was misclassified with one or another.
+Overall, from this preliminary analysis it appears that at least for Naive
+Bayes, text processing does not significantly improve results for these
+metrics. Going forward, I will stick with the the preprocessed columns that
+were provided in the data set.
 
 ## On feature engineering
 Recall from the problem statement that standards for posts specify they
@@ -126,7 +192,7 @@ Recall from the problem statement that standards for posts specify they
  would give a score close to `0` if the text was similar in words
  and word frequency to a document labeled `0` (i.e., accepted).
  Word similarity measure is achieved with tf-idf vectorization in the
-  Pipeline:
+ [final Pipeline](so_text/main.py):
   
 ```
     classifier = Pipeline([
@@ -144,13 +210,16 @@ Recall from the problem statement that standards for posts specify they
  encodings, they can potentially be duplicates of each other, and we would
  want to reject all except the original document. De-duplication can happen
  outside the predictive component of the model on test data/new data, or can
-  be feature engineered into the model.
+ be feature engineered into the model.
  See the "Not a duplicate" discussion below for more.
 
 ### "Detailed":
  *Detailed* can refer to  the richness, sophistication, complexity of
-  the text. Length can be an indication of detail. For example:
+  the text. Document length (in terms of words) is a simple proxy for detail
+  . For example:
 ```
+>>> df['Body_length'] = df.Body_processed.apply(lambda x: len(x.split()))
+>>> df['Title_length'] = df.Title_processed.apply(lambda x: len(x.split()))
 >>> df[['Body_length', 'Title_length', 'label']].groupby('label').agg('mean')
 
   	  Body_length	Title_length
@@ -158,29 +227,50 @@ label
 0	  284.056282	9.722529
 1	  137.723620	9.099180
 ```
-We see that accepted texts have both longer bodies and titles. The length of
-the document is not represented by the tf-idf features themselves, so I have
-encoded this as a feature, which is present in the main pipeline.
-Another possible feature, which would be highly correlated with length, is
-unique word count. Accepted posts have more than twice as many unique words:
+ We see that accepted texts have both longer bodies and titles. The length of
+ the document is not represented by the `tf-idf` features themselves, so I have
+ encoded this as a feature, which is present in the main Pipeline:
+```
+    classifier = Pipeline([
+        ('features', FeatureUnion([
+        ...
+            ('words', Pipeline([
+                ('wordext', NumberSelector('Body_length')),
+                ('wscaler', StandardScaler()),
+            ])),
+        ])),
+
+```
+ 
+ Another possible feature is
+ unique word count. The corpus of accepted posts has more than twice as many
+ unique words as the corpus of closed posts:
 ```
 >>> results_0, results_1 = set(), set()
 >>> df[df['label'] == 1]['Text'].str.lower().str.split().apply(results_1.update)
 >>> df[df['label'] == 0]['Text'].str.lower().str.split().apply(results_0.update)
 >>> print("label 1 unique words: %d," % len(list(results_1)),
       "label 0 unique words: %d" % len(list(results_0)))
+
 label 1 unique words: 179796, label 0 unique words: 376782
 ```
+ However, as expected, document length and unique word count per document are
+ strongly correlated, so I will leave it out of the Pipeline:
+ ```
+>>> df['Unique']= df.Text.apply(lambda x: len(set(x.split(" "))))
+>>> print(df.corr()['Length']['Unique'])
+0.8069517864895855
+```
+ 
 Ratios of parts of speech could also be an indication of how
 "detailed" the text is. That is, perhaps posts that
 are accepted tend to have some sort of distribution among different parts of
 speech -- fewer adjectives proportionally, etc. Such a feature
 could also provide signal for the post being "on topic".
 (Implemented via [`pos_ratio`](so_text/feature_process_utils.py).)
-As mentioned in the introduction, the code took too long to run, and to test
-this in the future I'd parallelize this in a cluster.
+However on my MacBook Air the code took too long to run, and to test
+this in the future, I'd parallelize this in a cluster.
 
-TRY THE UNIQUE WORDS. 
 
 ### "Not a duplicate":
  Suppose we were given the full corpus, and the model was trained on the full
@@ -231,8 +321,7 @@ https://towardsdatascience.com/de-duplicate-the-duplicate-records-from-scratch-f
  
 ### Title and body
 
- Strictly speaking, we should encode/do tf-idf for "title" and "body
- " separately.
+ Strictly speaking, we should encode/do tf-idf for "title" and "body" separately.
  The reason is that there is some signal to be gained from keeping subject lines
  and body separate; the vocabulary world of the subject lines and body are
  potentially different and the document might be rejected based on the failure
@@ -242,9 +331,10 @@ https://towardsdatascience.com/de-duplicate-the-duplicate-records-from-scratch-f
   - vectorizing a concatenated column,
  - vectorizing both separately.
 Then I ran these through Naive Bayes. 
-For vectorizing a concatenated column, I got the result:
+For vectorizing a concatenated column, I obtained the result (from above):
 
 ```
+>>> run.run_title_and_body_example_concat()
 roc_auc score: 0.8397354019687591
               precision    recall  f1-score   support
 
@@ -259,9 +349,10 @@ weighted avg       0.75      0.75      0.75     25000
        0 [9650 2847]
 True   1 [3338 9165]
 ```
-For vectorizing both separately, I got the result:
+For vectorizing both separately, I obtained the result:
 
 ```
+>>> run.run_title_and_body_example_sep()
 roc_auc score: 0.8482461288589771
               precision    recall  f1-score   support
 
@@ -276,20 +367,9 @@ weighted avg       0.76      0.76      0.76     25000
        0 [9971 2526]
 True   1 [3546 8957]
 ```
-Overall, it appears that separating the vectorizations improves the
+ Overall, it appears that separating the vectorizations improves the
  performance as expected,if slightly.
 
-HOW TO CAPTURE THE DOCUMENTS THAT ARE MOVING AROUND BUCKETS TO GET EXAMPLES?
-
-See the [code here](so_text/readme_analysis_runs.py).
-
-TRY WITH THE SEPARATED IN THE PIPELINE.
-   
-### Feature selection for the model
- Since the analysis is not concerned with effectiveness, I have left the
- question aside of feature selection for now. With more time I'd follow
- [this blog post](https://ramhiser.com/post/2018-03-25-feature-selection-with-scikit-learn-pipeline/) to integrate feature selection with the sklearn
- Pipeline. 
 
 ## On Algorithms
  I tried two algorithms, both of which had similar performance of `roc_auc`:
@@ -320,7 +400,7 @@ TRY WITH THE SEPARATED IN THE PIPELINE.
 ## On Evaluating performance
 Overall, I generate a report that has `roc_auc`,  and sklearn's
 classification report, which breaks down precision and recall by class (and
-also includes accuracy).
+also includes accuracy). 
 
 The advantage of the classification report is that it breaks down how well the
 model is performing in different buckets for a particular threshold. However,
@@ -336,14 +416,13 @@ determine the threshold for the classifier accordingly. (Threshold selection is
 normally done in such an ad-hoc fashion.)  Then the classification report will
 have more meaning.
 
- Roc_auc can be a good measure of the model performance because it does not take
+ `Roc-auc` can be a good measure of the model performance because it does not take
  into account the choice of threshold, which as explained, cannot be
  determined without additional information; it is essentially a way of
- understanding how well a model is performing across all thresholds. However
- , because the roc_auc is a curve between the true and false positive rates,
- in the case of highly imbalanced data, it does not indicate how well the model
- performs on minority classes. Precision-recall curves can be better in this
- situation
+ understanding how well a model is performing across all thresholds. 
+ If the real distribution is highly skewed, and one wants to optimize on the
+ capture rates of the minority class, recision-recall
+ curves can be better in this situation
  (see http://ftp.cs.wisc.edu/machine-learning/shavlik-group/davis.icml06.pdf).
  Therefore, if the artificially balanced training dataset provided was sampled
  from a highly imbalanced dataset, I may look instead to the AUC-PR.
@@ -351,12 +430,12 @@ have more meaning.
 ## Questions from the problem statement
 For completeness, I return to the questions.
 
-*What metric did you use to judge your approach’s performance, and how
+*1. What metric did you use to judge your approach’s performance, and how
 did it perform? Why did you choose that metric?*
 
- See “On Evaluating Performance” above.
+ See “On Evaluating Performance” above, and the next question.
 
-*The dataset we’ve given you is artificially balanced such that there’s an 
+*2. The dataset we’ve given you is artificially balanced such that there’s an 
 even split of closed posts to accepted posts. Should this influence the
 metrics you measure?*
  
@@ -420,7 +499,7 @@ metrics you measure?*
  
  See “On Evaluating Performance” above for more details.
 
-*How generalizable is your method? If you were given a different (disjoint)
+*3. How generalizable is your method? If you were given a different (disjoint)
 random sample of posts with the same labeling scheme, would you expect it to
 perform well? Why or why not? Do you have evidence for your reasoning?*
  
@@ -430,7 +509,7 @@ perform well? Why or why not? Do you have evidence for your reasoning?*
  random sample misses the original post, the new post may be accepted
  mistakenly.
 
-*How well would this method work on an entirely new close reason, e.g.
+*4. How well would this method work on an entirely new close reason, e.g.
 duplicate or spam posts?*
  For duplicates, see discussion above "feature engineering/Not a duplicate".
  Duplicates are an aspect of this problem statement and the method is already
@@ -442,14 +521,15 @@ duplicate or spam posts?*
  with the “title” analogous to email subject line, and
  the “body” analogous to the body of the email. 
  
-*Are there edge cases that your method tends to do worse with? Better? E.g.,
+*5. Are there edge cases that your method tends to do worse with? Better? E.g.,
 How well does it handle really long posts or titles?*
  
  Ive included the length of the concatenated body as a feature, so it should
  accommodate that.
  [Do ad hoc analysis on how well it did with really long posts though]
 
-*If you got to work on this again, what would you do differently (if anything)?*
+*6. If you got to work on this again, what would you do differently (if
+ anything)?*
  Throughout the document I have listed what I would do with more time, but also:
 - Generally speaking, the approach of focusing on the analysis first means
   that the code is too disorganized for my tastes  -- there's no overarching
@@ -465,7 +545,7 @@ How well does it handle really long posts or titles?*
   curious to see what would be the results if the training data was not
   artificially balanced.
 
-*If you found any issues with the dataset, what are they?*
+*7. If you found any issues with the dataset, what are they?*
  There were two missing values because of misapplied parser:
   ```
 

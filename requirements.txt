@@ -3,4 +3,7 @@ nltk==3.4.5
 pandas==1.0.3
 scikit_learn==0.22.2.post1
 scipy==1.4.1
-#xgboost==1.0.2
+lxml==4.5.0
+# xgboost==1.0.2
+# NOTE: for xgb on MacOSX there were errors with a simple install; follow
+# https://github.com/dmlc/xgboost/issues/3194#issuecomment-376491987

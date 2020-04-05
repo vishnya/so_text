@@ -5,8 +5,8 @@ from nltk.corpus import stopwords
 from bs4 import BeautifulSoup
 import pandas as pd
 
-RE_PUNCT = re.compile('[/(){}\[\]\|@,;]')
-RE_ALPHA = re.compile('[^0-9a-z #+_]')
+REPLACE_BY_SPACE_RE = re.compile('[/(){}\[\]\|@,;]')
+BAD_SYMBOLS_RE = re.compile('[^0-9a-z #+_]')
 STOPWORDS = set(stopwords.words('english'))
 
 DATA_PICKLE_PATH = 'okc_df.pkl'
@@ -20,12 +20,20 @@ def read_data_into_df():
     return df
 
 
-def clean_text(text, stopwords=True):
-    text = BeautifulSoup(text, "lxml").text.lower()
-    text = RE_PUNCT.sub(' ', text).RE_ALPHA.sub('', text)
-    if stopwords:
-        text = ' '.join(word for word in text.split() if
-                        word not in STOPWORDS)
+def process_text(text):
+    """
+        text: a string
+
+        return: modified initial string
+    """
+    text = BeautifulSoup(text, "lxml").text  # HTML decoding
+    text = text.lower()  # lowercase text
+    text = REPLACE_BY_SPACE_RE.sub(' ',
+                                   text)  # replace REPLACE_BY_SPACE_RE symbols by space in text
+    text = BAD_SYMBOLS_RE.sub('',
+                              text)  # delete symbols which are in BAD_SYMBOLS_RE from text
+    text = ' '.join(word for word in text.split() if
+                    word not in STOPWORDS)  # delete stopwors from text
     return text
 
 
