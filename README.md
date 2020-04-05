@@ -11,23 +11,17 @@ pip install -e .
  indicate whether the question was accepted or closed. The set-up is that
  currently the acceptance/rejection of question posts is done
  manually, but we can offload some manual work through
- automation and predictive modeling. Here is a row of the data that was
+ automation and predictive modeling. Here is the type of the data that is
  provided:
  
 ```
-                                Title:  \
-RUBY: most common number for Users   
-
-                                                Body  label:  \
-<p>Hi I'm new to <code>Ruby on Rails</code>. I...      1   
-
-                                      Body_processed:  \
-hi i'm new to ruby on rails . i created users ...   
-
-                       Title_processed: 
-ruby : most common number for users  
+Body	Title	label
+0	<p>Hi I'm new to <code>Ruby on Rails</code>. I...	RUBY: most common number for Users	1
+1	<p>I know that StringBuffer class is synchroni...	What exactly does it mean when they say that S...	0
+2	<p>I have a search engine on PHP that have ind...	Scan a webpage and get the video embed url only	1
 
 ```
+ Additionally, columns that process the text were also provided.
  My approach was to build a predictive model that is a classifier
  once a threshold is applied. The limitations of my approach for this problem
  context are
