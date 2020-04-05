@@ -11,7 +11,7 @@ pip install -e .
  [problem statement](docs/problem_statement.pdf).
  The data comprises the text of questions on StackOverflow, with labels that
  indicate whether the question was accepted or closed. The set-up is that
- currently the acceptance/rejection is done
+ currently the acceptance/rejection of question posts is done
  manually, but we can offload some manual work through
  automation and predictive modeling. Here is a row of the data that was
  provided:
@@ -70,8 +70,10 @@ approaches I tried in the initial analysis.
  The main steps of the Pipeline are:
  - Read the data into a data frame.
  - Encode stemmed word features, and perform tf-idf.
- - Feed the tf-idf matrix, and also an additional feature (length of doc), into XGBoost
- - Generate a performance report, with `roc_auc` and a classification report
+ - Feed the tf-idf matrix, and also an additional feature (length of doc), 
+ into XGBoost.
+ - Generate a performance report, with `roc_auc`,  classification report and
+  confusion matrix.
 
  
 # Main analysis
@@ -118,7 +120,7 @@ Example of how a particular sentence was misclassified with one or another.
 Recall from the problem statement that standards for posts specify they
  should be: “*on topic*, *detailed*, and *not a duplicate of another question*.”
  
-### “On topic”:
+### "On topic":
  One way of feature engineering the concept of "on topic" is to represent word
  similarity to previously accepted documents. Given an unseen text, the model
  would give a score close to `0` if the text was similar in words
@@ -145,7 +147,7 @@ Recall from the problem statement that standards for posts specify they
   be feature engineered into the model.
  See the "Not a duplicate" discussion below for more.
 
-### “Detailed”:
+### "Detailed":
  *Detailed* can refer to  the richness, sophistication, complexity of
   the text. Length can be an indication of detail. For example:
 ```
@@ -177,8 +179,10 @@ could also provide signal for the post being "on topic".
 (Implemented via [`pos_ratio`](so_text/feature_process_utils.py).)
 As mentioned in the introduction, the code took too long to run, and to test
 this in the future I'd parallelize this in a cluster.
- 
-### “Not a duplicate”:
+
+TRY THE UNIQUE WORDS. 
+
+### "Not a duplicate":
  Suppose we were given the full corpus, and the model was trained on the full
  data, and retrained each time a new doc and label came in. (If there is class
  imbalance, we can attempt to remedy it with upsampling techniques, but we
@@ -215,7 +219,9 @@ this in the future I'd parallelize this in a cluster.
   database, it can be marked as a duplicate and not accepted.
 https://towardsdatascience.com/de-duplicate-the-duplicate-records-from-scratch-f6e5ad9e79da
  - Add a column based on similarity.  Cluster texts based on
- similarity, using, say, k-means clustering, selecting the threshold by hand
+ similarity, using, say,
+ [word movers distance](http://proceedings.mlr.press/v37/kusnerb15.pdf), selecting
+ the threshold by hand
  so that it appears that all the documents in each cluster are duplicates of
  each other. Now, for each cluster of texts, choose one text at random at put
  a `1`. The obvious disadvantage of this approach is that we cannot typically
@@ -233,25 +239,51 @@ https://towardsdatascience.com/de-duplicate-the-duplicate-records-from-scratch-f
  to adhere to standards for the subject line specifically, say.
 
  In practice, I tried both:
- - vectorizing both separately,
- - vectorizing a concatenated column.
+  - vectorizing a concatenated column,
+ - vectorizing both separately.
 Then I ran these through Naive Bayes. 
-For vectorizing both separately, I got the result:
-
-```
-Paste result
-```
-
 For vectorizing a concatenated column, I got the result:
 
 ```
-Paste result
+roc_auc score: 0.8397354019687591
+              precision    recall  f1-score   support
+
+           0       0.74      0.77      0.76     12497
+           1       0.76      0.73      0.75     12503
+
+    accuracy                           0.75     25000
+   macro avg       0.75      0.75      0.75     25000
+weighted avg       0.75      0.75      0.75     25000
+
+              0  1  <-  Predicted
+       0 [9650 2847]
+True   1 [3338 9165]
 ```
+For vectorizing both separately, I got the result:
+
+```
+roc_auc score: 0.8482461288589771
+              precision    recall  f1-score   support
+
+           0       0.74      0.80      0.77     12497
+           1       0.78      0.72      0.75     12503
+
+    accuracy                           0.76     25000
+   macro avg       0.76      0.76      0.76     25000
+weighted avg       0.76      0.76      0.76     25000
+
+             0  1  <-  Predicted
+       0 [9971 2526]
+True   1 [3546 8957]
+```
+Overall, it appears that separating the vectorizations improves the
+ performance as expected,if slightly.
+
+HOW TO CAPTURE THE DOCUMENTS THAT ARE MOVING AROUND BUCKETS TO GET EXAMPLES?
+
 See the [code here](so_text/readme_analysis_runs.py).
-The results were similar enough that I didn't feel compelled to pursue this
-direction further. Of course, here I am trying Naive Bayes, whereas in the
-"main pipeline" I stuck with XGBoost, so I could still try it with that
- algorithm.
+
+TRY WITH THE SEPARATED IN THE PIPELINE.
    
 ### Feature selection for the model
  Since the analysis is not concerned with effectiveness, I have left the
@@ -268,7 +300,8 @@ direction further. Of course, here I am trying Naive Bayes, whereas in the
      The result was already presented in the "Title and Body" section above
       or in the function
 [`run_title_and_body_example_concat`](so_text/readme_analysis_runs.py).
- (Note that is the barest code, incorporating no
+ (Note that is the baseline code for naive bayes in this situation
+ , incorporating no
  additional preprocessing or features.)
      The downside of the Naive Bayes approach is
      that it assumes independence across different words which is an
@@ -365,7 +398,11 @@ How well does it handle really long posts or titles?*
  Throughout the document I have listed what I would do with more time
  . Generally speaking, the approach of focusing on the analysis first made
   the code more disorganized -- there's no overarching design because it's
-  not software. I'm not sure there was a better way, though.
+  not software. For example, in
+  [readme_analysis_runs](so_text/readme_analysis_runs.py),
+  I broke out the code from the Pipeline to have more control over it and
+  iterate faster for the sake of quick analysis of whether that approach works.
+  I'm not sure there was a better way, though.
 
 *If you found any issues with the dataset, what are they?*
  There were two missing values because of misapplied parser:
@@ -380,5 +417,4 @@ Title	                                            label	Title_processed
  Since there were only two, it was not an issue to simply drop those values.
  This suggests that there could be other issues at the parsing stage. However,
  applying my own parser did not lead to a significant difference in
- performance, as discussed
- above.
+ performance, as discussed above.

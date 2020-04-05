@@ -1,14 +1,17 @@
-from feature_process_utils import read_data_into_df
-from performance import generate_performance_report
-from modeling_utils import tts
+from .feature_process_utils import read_data_into_df
+from .performance import generate_performance_report
+from .modeling_utils import tts
 
 from scipy.sparse import hstack
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
+import pandas as pd
 
 
 def run_title_and_body_example_sep():
     df = read_data_into_df()
+    df.dropna(inplace=True)
     X_train, X_test, y_train, y_test = tts(df.drop('label',
                                                    axis=1),
                                            df['label'])
@@ -36,12 +39,13 @@ def run_title_and_body_example_sep():
 
 def run_title_and_body_example_concat():
     df = read_data_into_df()
+    df.dropna(inplace=True)
+    df['Text'] = df['Body_processed'] + df['Title_processed']
     X_train, X_test, y_train, y_test = tts(df.drop('label',
                                                    axis=1),
                                            df['label'])
-    vect = TfidfVectorizer(min_df=5).fit(X_train['Body_processed'])
 
-    X_train['Text'] = X_train['Body_processed'] + X_train['Title_processed']
+    vect = TfidfVectorizer(min_df=5).fit(X_train['Text'])
     X_train_vectorized = vect.transform(X_train['Text'])
 
     clf = MultinomialNB(alpha=0.1).fit(X_train_vectorized, y_train)
@@ -51,3 +55,17 @@ def run_title_and_body_example_concat():
     y_class = clf.predict(X_test_vectorized)
 
     generate_performance_report(y_test, y_score=y_score, y_class=y_class)
+
+
+def get_largest_smallest_tfidf(vect, X_train_vectorized, bound=5):
+    feature_names = np.array(vect.get_feature_names()).reshape(-1, 1)
+    tfidf_values = X_train_vectorized.max(0).toarray()[0].reshape(-1, 1)
+    tfidf_df = pd.DataFrame(data=np.hstack((feature_names, tfidf_values)),
+                            columns=['features', 'tfidf'])
+    smallest_tfidf = tfidf_df.sort_values(by=['tfidf', 'features']).set_index(
+        'features')[:bound]
+    largest_tfidf = tfidf_df.sort_values(by=['tfidf', 'features'],
+                                         ascending=[False, True]).set_index(
+        'features')[:bound]
+    return smallest_tfidf['tfidf'].apply(float), largest_tfidf['tfidf'].apply(
+        float)

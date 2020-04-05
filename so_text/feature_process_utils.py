@@ -1,5 +1,3 @@
-import os
-from pathlib import Path
 import re
 
 import nltk
@@ -11,20 +9,14 @@ RE_PUNCT = re.compile('[/(){}\[\]\|@,;]')
 RE_ALPHA = re.compile('[^0-9a-z #+_]')
 STOPWORDS = set(stopwords.words('english'))
 
-DATA_DIR = '/data/'
-DATA_PICKLE_PATH = DATA_DIR + 'okc_df.pkl'
+DATA_PICKLE_PATH = 'okc_df.pkl'
 DATA_URL = 'https://s3.amazonaws.com/techblog-static/interview_dataset.csv'
 
 
 def read_data_into_df():
-    Path(DATA_DIR).mkdir(parents=True,
-                         exist_ok=True)
-    if not os.path.exists(DATA_PICKLE_PATH):
-        df = pd.read_csv(DATA_URL)
-        pd.to_pickle(DATA_PICKLE_PATH)
-
-    else:
-        df = pd.read_pickle(DATA_PICKLE_PATH)
+    df = pd.read_csv(
+        'https://s3.amazonaws.com/techblog-static/interview_dataset'
+        '.csv')
     return df
 
 

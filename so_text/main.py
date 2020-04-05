@@ -88,3 +88,7 @@ def main():
     y_score = classifier.predict_proba(X_test)[:, 1]
 
     generate_performance_report(y_test, y_class, y_score)
+
+
+if __name__ == "__main__":
+    main()

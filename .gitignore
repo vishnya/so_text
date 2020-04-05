@@ -5,6 +5,7 @@ __pycache__/
 
 data/
 *.pkl
+*.ipynb
 
 # C extensions
 *.so
@@ -131,5 +132,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-/docs/okc.ipynb
-/docs/okc2.ipynb
+
