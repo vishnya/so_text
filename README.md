@@ -48,7 +48,7 @@ does not follow the usual standards of a Python library. As it stands, it is
 not software. Nevertheless, with more time I would still organize the code
 into a coherent whole that is focused on automating some experimentation to
 facilitate performance fine-tuning. Specifically, I would have a config file
-that populates the hardcoded hyperparameters with different combinations,
+that populates the hardcoded hyper-parameters with different combinations,
  applies different algorithms
  specified in the config, and returns the optimal result (based on a
 performance metric).
@@ -64,14 +64,14 @@ approaches I tried in the initial analysis.
 
 # Full pipeline code
  Although the problem is exploratory, the statement also indicates that I
- should choose a final method. As such, code in the form of an SkLearn Pipeline
+ should choose a final method. As such, code in the form of an `SkLearn Pipeline`
  can be found
   [here](so_text/main.py).
- The main steps of the Pipeline are:
+ The main steps of the `Pipeline` are:
  - Read the data into a data frame.
- - Encode stemmed word features, and perform tf-idf.
- - Feed the tf-idf matrix, and also an additional feature (length of doc), 
- into XGBoost.
+ - Encode stemmed word features, and perform `tf-idf`.
+ - Feed the `tf-idf` matrix, and also an additional feature (length of doc), 
+ into `XGBoost`.
  - Generate a performance report, with `roc_auc`,  classification report and
   confusion matrix.
 
@@ -349,7 +349,7 @@ have more meaning.
  from a highly imbalanced dataset, I may look instead to the AUC-PR.
 
 ## Questions from the problem statement
-Wrapping up, I return to the questions to make sure they're addressed.
+For completeness, I return to the questions.
 
 *What metric did you use to judge your approach’s performance, and how
 did it perform? Why did you choose that metric?*
@@ -359,50 +359,111 @@ did it perform? Why did you choose that metric?*
 *The dataset we’ve given you is artificially balanced such that there’s an 
 even split of closed posts to accepted posts. Should this influence the
 metrics you measure?*
+ 
+ Typically in practice the choice of performance metrics for the classifier
+ depends on what outcome one is trying to achieve, not the data itself. That
+ is, given extraneous business reasons -- such as if there is a greater cost to
+ the business of mis-categorizing one category or another, or if we interpret
+ business needs as requiring evenly accurate categorization across categories
+  -- we then choose a performance metric. For example, in the case of credit
+   card fraud,
+ the cost to the business of accepting a fraudulent transaction is much
+ higher than rejecting an honest one, so the metric that is typically chosen
+ is recall.
+    
+ Furthermore, the performance metrics we calculate above tell us how well the
+  model
+ performs on the held-out test set, not on real production data. 
+ Regardless of which
+ performance metric we choose for this problem set, we are still just measuring
+ how it performs in the artificial world where there's an even split. In
+  particular, since the test
+ set has been split out
+ from the artificially balanced set, the test set is
+ itself artificially balanced. The predictive aspect of the model is only
+ accurate on real production data if the
+ distribution of the production data and the distribution of the training data
+  are
+ similar. In the case when the original
+ data are skewed, but both classes are equally sampled, there is no reliable
+ frequency information for the model to be trained on, and therefore the
+ probability scores it outputs are unreliable on unseen data. If we then set a
+ threshold to produce a classifier, the
+ performance of the classifier still just indicates how well the classifier
+ would perform in a world in which there is an even split between closed
+ posts and accepted posts, not the real world, not on the original data from
+  which this was sampled. 
+ 
+ 
+ Still, it may be illuminating to explore why an artificially balanced training
+  set
+  may
+ have been sought in the first place. One case is: suppose the cost to the
+ business of rejecting a post is high. Then the purpose of our classification
+ model could be to classify as many rejected posts well as possible while
+ still maintaining reasonable performance overall. If the original data has
+ very few rejected posts and many accepted posts, then evenly sampling from
+ each class will introduce an implicit cost to the accepted posts, so that we
+ may be classifying the rejected posts better at the expense of
+ mis-classifying more accepted posts. In such situations, of highly skewed
+ data where we are more concerned with the correct classifications of
+ the minority
+ class (but still want to be reasonable), we then want to look at precision
+ -recall curves
+ to see how well our overall model is doing and choose a threshold based on
+ the trade-off between precision and recall. Overall though, as long as there
+ is sufficient data in the minority class to capture the patterns that
+ define the minority class, artificially balancing training data is not an
+ approach that seems to be supported by statisticians, though it's often
+ done as a quick-and-dirty solution for the reasons above.
 
- The metrics tell us how well the model performs on the held out test set. Since
- the test set has been split out from the artificially balanced set, it is
- itself artificially balanced. If in fact, the original data from which the
- artificially balanced set was chosen is highly skewed (with many more posts
- accepted than closed, or vice versa) the model could be less ineffective
- on unseen data from the imbalanced original. See
- “On Evaluating Performance” above for more details.
+ 
+ See “On Evaluating Performance” above for more details.
 
 *How generalizable is your method? If you were given a different (disjoint)
 random sample of posts with the same labeling scheme, would you expect it to
 perform well? Why or why not? Do you have evidence for your reasoning?*
+ 
  It would potentially suffer from the same limitations as the original
- random sample. One limitation that still stands is that with duplicates
- -- see the section "On feature engineering/Not a duplicate”. In short
- , suppose a new post is a duplicate of an old one. If a different random
- sample misses the original post, the new post may be accepted mistakenly.
+ random sample. One limitation that still stands is that with duplicates.
+ In short, suppose a new post is a duplicate of an old one. If a different
+ random sample misses the original post, the new post may be accepted
+ mistakenly.
 
 *How well would this method work on an entirely new close reason, e.g.
 duplicate or spam posts?*
- For duplicates, see discussion above ““feature engineering/Not a duplicate”.
+ For duplicates, see discussion above "feature engineering/Not a duplicate".
  Duplicates are an aspect of this problem statement and the method is already
- limited in the way I have described.  I think the approach would work
- well on spam posts, with the “title” analogous to email subject line, and
- the “body”
- analogous to the body of the email. On the other hand, spam could
-  potentially be more imbalanced, and the class imbalance could be remedied
-   with upsampling techniques, taken with care.
+ limited in the way I have described.
+ 
+ Again, *"how well"* the method works depends on what we are trying to achieve
+ with the classifier as it is deployed to StackOverflow. The overall
+ approach of using  `tf-idf` to measure word similarity on spam posts works,
+ with the “title” analogous to email subject line, and
+ the “body” analogous to the body of the email. 
  
 *Are there edge cases that your method tends to do worse with? Better? E.g.,
 How well does it handle really long posts or titles?*
+ 
  Ive included the length of the concatenated body as a feature, so it should
-  accommodate that.
+ accommodate that.
  [Do ad hoc analysis on how well it did with really long posts though]
 
 *If you got to work on this again, what would you do differently (if anything)?*
- Throughout the document I have listed what I would do with more time
- . Generally speaking, the approach of focusing on the analysis first made
-  the code more disorganized -- there's no overarching design because it's
+ Throughout the document I have listed what I would do with more time, but also:
+- Generally speaking, the approach of focusing on the analysis first means
+  that the code is too disorganized for my tastes  -- there's no overarching
+  design because it's
   not software. For example, in
   [readme_analysis_runs](so_text/readme_analysis_runs.py),
-  I broke out the code from the Pipeline to have more control over it and
-  iterate faster for the sake of quick analysis of whether that approach works.
-  I'm not sure there was a better way, though.
+  I broke out the code from the Pipeline, so there is code duplication. I
+  did this to have more control over the steps, as well as to iterate faster
+  for the sake of quick analysis of whether that approach works.
+  However, I'm not sure there is really a better way to organize it for the
+  in terms of this problem set.
+- With more time, I would get my hands on the original dataset because I am
+  curious to see what would be the results if the training data was not
+  artificially balanced.
 
 *If you found any issues with the dataset, what are they?*
  There were two missing values because of misapplied parser:
