@@ -84,8 +84,13 @@ Body	Title	label
  - Generate a performance report, comprising the `roc_auc`, a classification
   report and a
   confusion matrix.
+While I used Naive Bayes to test various approaches against each other, in
+ the end I used XGBoost because I wanted to take a classifier that handles
+ mixed types well (length is numerical/ordinal) s, and because it trains
+  rapidly. 
+  
+The performance report is:
 
- 
 # Main analysis
  In the below, I compare various techniques. The code for the analysis is
  mostly found in
@@ -124,7 +129,8 @@ roc_auc score: 0.8400422115864314
    macro avg       0.75      0.75      0.75     25000
 weighted avg       0.75      0.75      0.75     25000
 
-         0  1  <-  Predicted
+confusion matrix:
+             0  1  <-  Predicted
        0 [9764 2733]
 True   1 [3435 9068]
 ```
@@ -145,13 +151,14 @@ roc_auc score: 0.8397354019687591
    macro avg       0.75      0.75      0.75     25000
 weighted avg       0.75      0.75      0.75     25000
 
-         0  1  <-  Predicted
+confusion matrix:
+             0  1  <-  Predicted
        0 [9650 2847]
 True   1 [3338 9165]
 ```
 
 Now let's try another text processor
-[`process_text`](so_text/feature_process_utils.py). The performance dips
+[`process_text`](so_text/utils.py). The performance dips
  slightly more.
 
 ```
@@ -166,6 +173,7 @@ roc_auc score: 0.8378418466596904
    macro avg       0.75      0.75      0.75     25000
 weighted avg       0.75      0.75      0.75     25000
 
+confusion matrix:
          0  1  <-  Predicted
        0 [9621 2876]
 True   1 [3365 9138]
@@ -261,7 +269,7 @@ Ratios of parts of speech could also be an indication of how
 are accepted tend to have some sort of distribution among different parts of
 speech -- fewer adjectives proportionally, etc. Such a feature
 could also provide signal for the post being "on topic".
-(Implemented via [`pos_ratio`](so_text/feature_process_utils.py).)
+(Implemented via [`pos_ratio`](so_text/utils.py).)
 However on my MacBook Air the code took too long to run, and to test
 this in the future, I'd parallelize this in a cluster.
 
@@ -357,6 +365,7 @@ roc_auc score: 0.8482461288589771
    macro avg       0.76      0.76      0.76     25000
 weighted avg       0.76      0.76      0.76     25000
 
+confusion matrix:
              0  1  <-  Predicted
        0 [9971 2526]
 True   1 [3546 8957]

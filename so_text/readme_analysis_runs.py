@@ -4,8 +4,8 @@ To run these examples, e.g.:
  >>> run.run_alternate_parser_example()
 """
 
-from so_text.feature_process_utils import read_data_into_df, process_text
-from so_text.performance import generate_performance_report
+from so_text.utils import read_data_into_df, process_text, \
+    generate_performance_report
 
 from scipy.sparse import hstack
 from sklearn.naive_bayes import MultinomialNB
