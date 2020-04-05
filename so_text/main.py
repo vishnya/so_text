@@ -1,5 +1,5 @@
-from so_text.feature_process_utils import read_data_into_df, tokenizer
-from so_text.performance import generate_performance_report
+from so_text.utils import read_data_into_df, tokenizer, \
+    generate_performance_report
 
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import StandardScaler
