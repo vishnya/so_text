@@ -38,12 +38,14 @@ Body	Title	label
     enough information provided to determine a threshold otherwise.
 - The repo code exists solely to capture some of the analysis below.
  It is in the style of a data science notebook, not software. I chose to not
-  use a Jupyter notebook because it does not play as well with git as markdown,
+  use a Jupyter notebook because it does not play as well with `git` as
+   does markdown,
    and I
   knew that I would not be visualizing much data.
 - The below analysis is data science exploration rather than exploitation.
-    - The question is analysis focused, so the organization is like playing
-     in a sandbox. That is I try various approaches to lay
+    - The question is analysis focused, so the organization of the repo is like
+     the report about playing
+     in a sandbox. That is, I try various approaches to lay
    to get a sense of what works, to lay groundwork to choose one path to
     optimize on performance.
 
@@ -141,9 +143,10 @@ weighted avg       0.76      0.76      0.76     25000
 
  
 ## On text processing
- ### Summary: we compare text processing approaches to see how it affects the
-  model performance, and ultimately select the one provided by the data. 
-   
+ ### Summary
+ We compare text processing approaches to see how it affects the model
+ performance, and ultimately select the one provided by the data. 
+ ### Additional detail
  When we apply various text parsing and processing techniques to training text
  data, we change the data. Thus the overall model estimator trained on that is
  different as well. There is a trade-off between scraping the text too much,
@@ -231,7 +234,7 @@ metrics. Going forward, I will stick with the the preprocessed columns that
 were provided in the data set.
 
 ## On feature engineering
- Summary:
+ ### Summary
  Recall from the problem statement that standards for posts specify they
  should be: “*on topic*, *detailed*, and *not a duplicate of another question*”.
  - *On topic* posts can be represented through word frequency (`tf-idf`), as
@@ -244,14 +247,14 @@ were provided in the data set.
     - code richness.
  - *Duplicate* posts can be represented via a decision layer outside the
   model, or an word similarity approach as a feature.
-  
-### "On topic":
+  ### Additional detail
+#### "On topic":
 We can represent on-topic-ness in at least 3 ways:
 - Word frequency similarity
 - Word embeddings similarity
 - Topic modeling
 
-#### Word frequency similarity
+##### Word frequency similarity
 
  One way of feature engineering the concept of "on topic" is to represent word
  frequency and compare to previously accepted documents on that basis. Given an
@@ -296,7 +299,7 @@ roc_auc score: 0.8530721963369584
 weighted avg       0.77      0.77      0.77     25000
  ```
  
- #### Word embeddings similarity
+ ##### Word embeddings similarity
  Another way to see document similarity is embed the documents in a high
  dimensional pre-trained feature space. I did a quick and dirty Keras
  Sequential model (sigmoid activation function, after GloVe embedding) on the
@@ -317,7 +320,7 @@ weighted avg       0.77      0.77      0.77     25000
  appear much worse than the Naive Bayes approach, There is still the
  potential to achieve better performance with the deep learning approach, by
  including other features.
-#### Topic modeling
+##### Topic modeling
  Topic modeling can help us obtain some signal as well, or can help us to
  break down the classifier into multiple classifiers across topics. In
  particular, if we perform topic modeling and see that the texts are in
@@ -326,7 +329,7 @@ weighted avg       0.77      0.77      0.77     25000
  would be more likely to be accepted. Alternatively, we could create
  multiple classifiers across topics and see if that ensemble of
  classifiers performs better.
-### "Detailed":
+#### "Detailed":
  *Detailed* can refer to  the richness, sophistication, complexity of
   the text.
 -   Document *length* (word count) is a simple proxy for detail
@@ -451,8 +454,8 @@ label 1 unique words: 179796, label 0 unique words: 376782
  practice to post the output of the error and the code that lead up to it).
 
 
-### "Not a duplicate":
-#### Summary
+#### "Not a duplicate":
+##### Summary
  
  Because the sample provided is a sample of the original set, and no
  column is provided to indicate whether or not the post is a duplicate,
@@ -467,7 +470,7 @@ label 1 unique words: 179796, label 0 unique words: 376782
  - A decision layer with unsupervised clustering,
  - The results of unsupervised clustering as a feature in the model.
  
-#### Detail
+##### Additional detail
  
  Suppose we were given the full corpus, and the model was trained on the full
  data in the StackOverflow database, and was retrained each time a new doc and
@@ -517,7 +520,7 @@ label 1 unique words: 179796, label 0 unique words: 376782
  transparency the explicit decision layer would have.
  
  
-### Title and body
+#### Title and body
 
  Strictly speaking, we should encode/do tf-idf for "title" and "body" separately.
  The reason is that there is some *signal to be gained from keeping subject
@@ -599,8 +602,8 @@ Actual  1 [3546 8957]
     I trained a neural network with the GloVe embedding to see how well a 
     embedding document's similarity (distance) to an accepted post
     corresponds to acceptance or closure of posts.
-- XGBoost: 
-    I tried XGBoost on the `tf-idf` encoded features, and an additional
+- `XGBoost`: 
+    I tried `XGBoost` on the `tf-idf` encoded features, and an additional
     numerical one of length of the document. The advantage of XGBoost is
     that it is relatively fast to train and allows for features of mixed types.
 
@@ -716,8 +719,6 @@ metrics you measure?*
  done as a quick-and-dirty solution for the reasons above.
 
  
- See “On Evaluating Performance” above for more details.
-
 *3. How generalizable is your method? If you were given a different (disjoint)
 random sample of posts with the same labeling scheme, would you expect it to
 perform well? Why or why not? Do you have evidence for your reasoning?*
@@ -765,8 +766,8 @@ weighted avg       0.75      0.77      0.70       199
 
 confusion matrix: 
 
-           0  1  <-  Predicted
-         0 [147   3]
+             0  1  <-  Predicted
+          0 [147   3]
 Actual   1 [43  6]
 None
 Performance on docs of word length < 20, comprising 81 documents
@@ -782,8 +783,8 @@ weighted avg       0.85      0.81      0.83        81
 
 confusion matrix: 
 
-           0  1  <-  Predicted
-         0 [0 6]
+            0  1  <-  Predicted
+          0 [0 6]
 Actual   1 [ 9 66]
 ```
 *6. If you got to work on this again, what would you do differently (if
