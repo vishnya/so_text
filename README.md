@@ -802,9 +802,9 @@ Actual   1 [ 9 66]
 
 Otherwise, here's what I would do with more time (most of these I have
  mentioned above):
- - *Obtain the original dataset* and train the model on that to avoid issues
+ - **Obtain the original dataset** and train the model on that to avoid issues
   from artificial balancing.
- - Reorganize the code into an *auto experimentation repo*. The approach of
+ - Reorganize the code into an **auto experimentation repo**. The approach of
   focusing on the analysis
   first means
   that the code is too disorganized for my tastes  -- there's no overarching
@@ -818,23 +818,23 @@ Otherwise, here's what I would do with more time (most of these I have
   approaches. In future versions I could reorganize code to facilitate
   automatic experimentation of a few approaches (different parameters in a
   config file, etc.)
-- Perform *topic modeling* to check if there are specific topics that dominate
+- Perform **topic modeling** to check if there are specific topics that dominate
  the
  dataset. If there are, include those as features.
-- Perform *unsupervised clustering of similarity* for documents to catch
+- Perform **unsupervised clustering of similarity** for documents to catch
  duplicates,
  either as a decision layer on top of the predictive model, or as a feature.
-- Perform *anomaly detection removal* to remove data with
+- Perform **anomaly detection removal** to remove data with
  issues. In particular, when we embed
  the words in the embedding space (say via GloVe or the like), there will be
  some points (documents) that fall a great distance away from the others. I
  would try removing those and retraining the model.
-- *Contribute to the sklearn code* to fix the feature importances issue
+- **Contribute to the `sklearn` code** to fix the feature importances issue
  to perform feature importance; otherwise, I would discard the Pipeline
  approach.
-- Improve the *deep learning* approach, including *more features* than just
+- Improve the **deep learning** approach, including **more features** than just
  embedded documents, and
- try an *LSTM* to see if word ordering matters. 
+ try an **LSTM** to see if preserving word ordering helps classify better. 
 
 *7. If you found any issues with the dataset, what are they?*
 
