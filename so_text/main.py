@@ -1,4 +1,4 @@
-from so_text.utils import read_data_into_df, tokenizer, \
+from so_text.utils import read_data, tokenizer, \
     generate_performance_report
 
 from sklearn.pipeline import Pipeline, FeatureUnion
@@ -21,7 +21,7 @@ XGB_SVD_N_COMPONENTS = 100
 
 
 def feature_process():
-    df = read_data_into_df()
+    df = read_data()
     df.dropna(inplace=True)
     df['Text'] = df['Body_processed'] + df['Title_processed']
     df['Length'] = df.Text.apply(lambda x: len(x.split()))
@@ -64,7 +64,6 @@ def main():
                 ('colext', TextSelector('Text')),
                 ('tfidf',
                  TfidfVectorizer(tokenizer=tokenizer,
-                                 # stop_words=stop_words,
                                  min_df=TFIDF_MIN_DF,
                                  max_df=TFIDF_MAX_DF,
                                  ngram_range=TF_IDF_NGRAM_RANGE)),
@@ -72,7 +71,7 @@ def main():
                                      n_components=XGB_SVD_N_COMPONENTS)),
             ])),
             ('words', Pipeline([
-                ('wordext', NumberSelector('Body_length')),
+                ('wordext', NumberSelector('Length')),
                 ('wscaler', StandardScaler()),
             ])),
         ])),
@@ -86,8 +85,9 @@ def main():
     classifier.fit(X_train, y_train)
     y_class = classifier.predict(X_test)
     y_score = classifier.predict_proba(X_test)[:, 1]
-
     generate_performance_report(y_test, y_class, y_score)
+
+    return classifier, X_train, y_train, y_class, y_score
 
 
 if __name__ == "__main__":
