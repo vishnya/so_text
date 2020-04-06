@@ -722,17 +722,17 @@ metrics you measure?*
 *3. How generalizable is your method? If you were given a different (disjoint)
 random sample of posts with the same labeling scheme, would you expect it to
 perform well? Why or why not? Do you have evidence for your reasoning?*
- - The limitations again depend on how the random sampling is done, and how
+ - The limitations depend on how the random sampling is done, and how
   much of it is done. The closer the distribution is to the real distribution,
   the more reflective the performance metrics are of how well the model would
   behave in the real world, which could in theory mean that the model
-  performs worse, though it is more accurate on the real world.
+  performs worse, because it was not that effective to begin with.
  - The more data we sample, the more duplicates we will catch and the more
   likely we are to capture the original document that later documents
    duplicated. That is, suppose a new post is a duplicate of an old one. If a
    different random sample misses the original post, the new post may be
    accepted mistakenly. The more we avoid this situation, the better.
- - I do not have real evidence to support this reasoning, because I do not have
+ - I do not have real evidence to support my reasoning, because I do not have
   the original set from which the dataset provided was sampled. 
 
 *4. How well would this method work on an entirely new close reason, e.g.
