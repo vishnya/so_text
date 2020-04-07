@@ -55,7 +55,7 @@ Body	Title	label
  once a threshold is applied. The limitations of my approach for this problem
  context are
  addressed in the analysis below. For one, without the cost of false
- positives and negatives, and an without understanding of which call to make in
+ positives and negatives, and without an understanding of which call to make in
   the
  trade-off between better classifying one category over another, one cannot
   systematically set a
@@ -324,7 +324,9 @@ weighted avg       0.77      0.77      0.77     25000
  Topic modeling can help us obtain some signal as well, or can help us to
  break down the classifier into multiple classifiers across topics. In
  particular, if we perform topic modeling and see that the texts are in
- distinct clusters, we can create a feature. If a new document is in a
+ distinct clusters, we can create a feature that indicates which cluster a
+  document is in. If a new
+  document is in a
  topic that tends to have more acceptance, for instance, that document
  would be more likely to be accepted. Alternatively, we could create
  multiple classifiers across topics and see if that ensemble of
@@ -347,18 +349,16 @@ label
  We see that accepted texts have both longer bodies and titles.
  Let's get some more statistics about length, combining titles and bodies:
 ```
->>> def q25(x):
->>>     return x.quantile(0.75)
 >>> def q75(x):
 >>>     return x.quantile(0.75)
 >>> def q99(x):
 >>>     return x.quantile(0.99)
 >>> df.groupby('label').agg({'Length': [q25, q75, q99, 'mean','min', 'max']})
 
-	q25	q75	q99	mean	        min	max
+		q75	q99	mean	        min	max
 label						
-0	332	332	1796.03	292.778811	13	11319
-1	156	156	950.01	145.822800	7	27014
+0		332	1796.03	292.778811	13	11319
+1		156	950.01	145.822800	7	27014
 ``` 
   Overall, the length appears to be correlated with acceptance, except
   perhaps on the extreme end, since the maximum length document was in fact
@@ -397,7 +397,7 @@ At the other end, the shortest posts (all rejected) had the bodies:
 85035    javac is giving errors while compiling      
 90914    ..............................              
 ```
- It is clear that the lack of explanation/specificity in the bodies doomed the
+ It is clear that the lack of explanation/specificity in the text doomed the
  posts to
  close.
 
@@ -473,7 +473,8 @@ label 1 unique words: 179796, label 0 unique words: 376782
 ##### Additional detail
  
  Suppose we were given the full corpus, and the model was trained on the full
- data in the StackOverflow database, and was retrained each time a new doc and
+ data in the StackOverflow database, and was retrained each time a new doument
+  and
  label came in. Then, suppose that a new document
  comes in and we want to score it using the trained model. Suppose the previous
  training set included just 1 document which the new document duplicates,
@@ -511,9 +512,11 @@ label 1 unique words: 179796, label 0 unique words: 376782
  - Add a column based on similarity.  Cluster texts based on embedded
  similarity, selecting
  the threshold by hand
- so that it appears that most of the documents in each cluster are duplicates of
+ so that it appears that the documents in each cluster are duplicates of
  each other. Now, for each cluster of texts, choose one text at random at put
- a `1`. The obvious disadvantage of this approach is that we cannot typically
+ a `0` to indicate an original and mark the rest as `1` to indicate rejection
+  based on duplication. One
+  disadvantage of this approach is that we cannot typically
  manually inspect each cluster to see that it only contains duplicates, so
  this is equally ad hoc as the decision layer before, and in my opinion is a
  worse approach because by including this as a feature we are reducing the
@@ -523,9 +526,9 @@ label 1 unique words: 179796, label 0 unique words: 376782
 #### Title and body
 
  Strictly speaking, we should encode/do tf-idf for "title" and "body" separately.
- The reason is that there is some *signal to be gained from keeping subject
+ The reason is that there is some signal to be gained from **keeping subject
   lines
- and body separate* as features; the vocabulary world of the subject lines and
+ and body separate** as features; the vocabulary world of the subject lines and
   body are
  potentially different and the document might be rejected based on the failure
  to adhere to standards for the subject line specifically, say.
@@ -591,20 +594,19 @@ Actual  1 [3546 8957]
  additional preprocessing or features.)
      The downside of the Naive Bayes approach is
      that it assumes independence across different words which is an
-     oversimplification. (As an aside, I  also tried with n
-     -grams, but the improvement across metrics was not significant.) Another
+     oversimplification. Another
       issue with Naive Bayes is that order of words is not preserved, whereas
      the order of the words could provide some signal in terms of whether the
      document is accepted or not. For example, documents that are accepted could
      have more introductory words up front. Given more time for this reason I
-     would try training an `LSTM`, which does consider word order.
+     would try training an `LSTM`, which does incorporate word order.
  - Keras Sequential neural network:
-    I trained a neural network with the GloVe embedding to see how well a 
+    I trained a neural network with the `GloVe` embedding to see how well a 
     embedding document's similarity (distance) to an accepted post
     corresponds to acceptance or closure of posts.
 - `XGBoost`: 
     I tried `XGBoost` on the `tf-idf` encoded features, and an additional
-    numerical one of length of the document. The advantage of XGBoost is
+    numerical one of length of the document. The advantage of `XGBoost` is
     that it is relatively fast to train and allows for features of mixed types.
 
 ## Questions from the problem statement
@@ -616,7 +618,7 @@ did it perform? Why did you choose that metric?*
  I chose the `roc_auc`, and the best performance tended to be about
  `.84` depending on the method. I chose it mainly because it is
   threshold agnostic. Overall, I generate a report that has `roc_auc`,
- and Sklearn's classification report, which breaks down precision and recall
+ and `Sklearn`'s classification report, which breaks down precision and recall
  by class (and also includes accuracy), because it's better to have multiple
  performance metrics at hand if one does not know what the focus of the
  performance metrics is (e.g. if we want to focus on the minority class
@@ -637,10 +639,11 @@ determine the threshold for the classifier accordingly. (Threshold selection is
 normally done in such an ad-hoc fashion.)  Then the classification report will
 have more meaning.
 
- `Roc-auc` can be a good measure of the model performance because it does not take
+ `roc-auc` can be a good measure of the model performance because it does not
+  take
  into account the choice of threshold, which as explained, cannot be
- determined without additional information; it is a way of
- understanding *how well a model is performing across all thresholds*. (The
+ determined without additional information. The  `roc-auc` is a way of
+ understanding **how well a model is performing across all thresholds**. (The
  probabilistic interpretation of the roc auc is that it is
  probability the model will score a randomly chosen positive class higher
  than a randomly chosen negative class. So this metric is useful insofar as
@@ -670,7 +673,7 @@ metrics you measure?*
    card fraud,
  the cost to the business of accepting a fraudulent transaction is much
  higher than rejecting an honest one, so the metric that is typically chosen
- is recall.
+ is `recall`.
     
  Furthermore, the performance metrics we calculate above tell us how well the
   model
@@ -704,15 +707,15 @@ metrics you measure?*
  model could be to classify as many rejected posts well as possible while
  still maintaining reasonable performance overall. If the original data has
  very few rejected posts and many accepted posts, then evenly sampling from
- each class will introduce an implicit cost to the accepted posts, so that we
+ each class will introduce an implicit cost on the accepted posts, so that we
  may be classifying the rejected posts better at the expense of
  misclassifying more accepted posts. In such situations, of highly skewed
  data where we are more concerned with the correct classifications of
  the minority
- class (but still want to be reasonable), we then want to look at precision
- -recall curves
+ class (but still want to be reasonable), we then want to look at `precision
+ -recall curves`
  to see how well our overall model is doing and choose a threshold based on
- the trade-off between precision and recall. Overall though, as long as there
+ the trade-off between `precision` and `recall`. Overall though, as long as there
  is sufficient data in the minority class to capture the patterns that
  define the minority class, artificially balancing training data is not an
  approach that seems to be supported by statisticians, though it's often
@@ -725,11 +728,11 @@ perform well? Why or why not? Do you have evidence for your reasoning?*
  - The limitations depend on how the random sampling is done, and how
   much of it is done. The closer the distribution is to the real distribution,
   the more reflective the performance metrics are of how well the model would
-  behave in the real world, which could in theory mean that the model
+  perform in production, which could in theory mean that the model
   performs worse, because it was not that effective to begin with.
  - The more data we sample, the more duplicates we will catch and the more
   likely we are to capture the original document that later documents
-   duplicated. That is, suppose a new post is a duplicate of an old one. If a
+   duplicate. That is, suppose a new post is a duplicate of an old one. If a
    different random sample misses the original post, the new post may be
    accepted mistakenly. The more we avoid this situation, the better.
  - I do not have real evidence to support my reasoning, because I do not have
@@ -737,7 +740,7 @@ perform well? Why or why not? Do you have evidence for your reasoning?*
 
 *4. How well would this method work on an entirely new close reason, e.g.
 duplicate or spam posts?*
- - For duplicates, duplicates are an aspect of this problem statement and the
+ - Duplicates are an aspect of this problem statement and the
   method is already limited in the way I have previously described.
  - I believe the methods I have used would apply well to spam posts. In
   particular, the
